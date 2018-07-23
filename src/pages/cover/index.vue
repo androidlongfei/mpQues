@@ -24,6 +24,7 @@
 import cover from '@/images/cover.jpg'
 import ReloadPage from '@/components/ReloadPage'
 import fetch from '@/service/fetch'
+import { encodeUrlParam } from '@/utils/urlTool'
 import { baseUrl } from '@/config/interfaceTool'
 export default {
     data() {
@@ -65,12 +66,9 @@ export default {
             }
             if (this.paramsStr && this.paramsStr.length > 0) {
                 queryParam.params = this.paramsStr
-                const url = `../topic/main?code=${this.routerParams.code}&params=${this.paramsStr}`
-                wx.navigateTo({ url })
-            } else {
-                const url = `../topic/main?code=${this.routerParams.code}`
-                wx.navigateTo({ url })
             }
+            let url = encodeUrlParam('../topic/main', queryParam)
+            wx.navigateTo({ url })
         },
         againLoad() {
             console.log('重新加载...');

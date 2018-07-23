@@ -47,7 +47,7 @@ module.exports = {
             "args": "none"
         }],
         // 使用 === 代替 ==,警告
-        "eqeqeq": [1, "always"],
+        "eqeqeq": [0, "always"],
         // 最有只能有两个空行
         "no-multiple-empty-lines": [2, {
             "max": 3,

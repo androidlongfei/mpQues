@@ -11,7 +11,7 @@
         </div>
         <div v-else>
             <div class="content">
-                问题内容
+                报告页
             </div>
         </div>
     </div>
@@ -20,6 +20,7 @@
 
 <script>
 import ReloadPage from '@/components/ReloadPage'
+import { decodeUrlParam } from '@/utils/urlTool'
 export default {
     data() {
         return {
@@ -39,7 +40,7 @@ export default {
         }
     },
     mounted() {
-        this.routerParams = this.$root.$mp.query
+        this.routerParams = decodeUrlParam(this.$root.$mp.query)
         console.log('this.routerParams', this.routerParams);
         this.againLoad()
     }
