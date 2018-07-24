@@ -303,7 +303,7 @@ export default {
                     })
                 }
             }).catch((ex) => {
-                this.$layer.close()
+                wx.hideLoading()
                 if (firstResquest) {
                     // 首页 显示加载出错，重试
                     this.firstLoadStatus = false

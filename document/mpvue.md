@@ -100,7 +100,7 @@ mounted() {
 
 > `&`是特殊字符会被分割，从而导致出错
 
-### 编码和解码工具函数
+**编码和解码工具函数**
 
 编码:
 
@@ -165,7 +165,9 @@ function decodeUrlParam(paramObj = {}) {
 }
 ```
 
-编码参数用法如下:
+**工具函数用法**
+
+编码用法如下:
 
 ```javascript
 let queryParam = {
@@ -182,7 +184,7 @@ console.log('url', url)
 wx.navigateTo({ url })
 ```
 
-解码参数用法如下:
+解码用法如下:
 
 ```javascript
 mounted() {

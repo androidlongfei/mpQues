@@ -10,8 +10,8 @@ const getDiseaseByCodeUrl = 'https://k-api-pro.op.laikang.com/dictDisease/getDis
  * 问卷报告地址
  * @type {String}
  */
-// const baseUrl = 'https://mahout-api-pro-laikang.op.laikang.com' //  ngix pro
-const baseUrl = 'https://lk-mahout-api-dev.op.laikang.com' // 盐城paas dev
+const baseUrl = 'https://mahout-api-pro-laikang.op.laikang.com' //  ngix pro
+// const baseUrl = 'https://lk-mahout-api-dev.op.laikang.com' // 盐城paas dev
 
 
 
