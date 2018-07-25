@@ -46,7 +46,7 @@ export default {
     },
     mounted() {
         this.routerParams = this.$root.$mp.query
-        this.routerParams.code = 3
+        this.routerParams.code = 1
         console.log('this.routerParams', this.routerParams);
         this.againLoad()
     },

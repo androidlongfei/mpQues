@@ -32,7 +32,7 @@
                             <!-- 来自于问卷的结论 -->
                             <!-- 体质问卷 -->
                             <p v-if="routerParams.code == 1 ">
-                                {{codeObj.masterCodeContent ? '您的主体质是':''}}<span class="masterCode" @click="codeDesJump(code.master)">{{codeObj.masterCodeContent}}</span> {{codeObj.bothCodeContent ? '，兼有体质是':''}}<span class="bothCode" v-for="(bothItem,bothItemIndex) in code.both" :key="bothItemIndex" @click="codeDesJump(bothItem)">{{bothItem.name}}{{code.both.length !== (bothItemIndex+1) ? '、':''}}</span> {{codeObj.inclineCodeContent ? '，倾向体质是':''}}<span class="inclineCode" v-for="(inclineItem,inclineItemIndex) in code.incline" @click="codeDesJump(inclineItem)">{{inclineItem.name}}{{code.incline.length !== (inclineItemIndex+1) ? '、':''}}</span>
+                                {{codeObj.masterCodeContent ? '您的主体质是':''}}<span class="masterCode" @click="codeDesJump(code.master)">{{codeObj.masterCodeContent}}</span> {{codeObj.bothCodeContent ? '，兼有体质是':''}}<span class="bothCode" v-for="(bothItem,bothItemIndex) in code.both" :key="bothItemIndex" @click="codeDesJump(bothItem)">{{bothItem.name}}{{code.both.length !== (bothItemIndex+1) ? '、':''}}</span> {{codeObj.inclineCodeContent ? '，倾向体质是':''}}<span class="inclineCode" v-for="(inclineItem,inclineItemIndex) in code.incline" :key="inclineItemIndex" @click="codeDesJump(inclineItem)">{{inclineItem.name}}{{code.incline.length !== (inclineItemIndex+1) ? '、':''}}</span>
                             </p>
                             <!-- 其它问卷 -->
                             <p v-else>
@@ -47,6 +47,20 @@
                     </div>
                     </template>
                 </section>
+
+                <section class="panel" v-if="mulRaiseData">
+                    <div class="p-title">
+                        <h3>调养建议</h3>
+                    </div>
+                    <div class="p-content" style="padding-bottom:0px;">
+                        <div class="raise">
+                            <div class="advice" v-for="(raiseItem,index) in mulRaiseData.list" :key="index" @click="raiseJump(raiseItem)">
+                                <img :src="raiseItem.img" alt="">
+                                <h3>{{raiseItem.title}}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </div>
         </div>
     </div>
@@ -58,6 +72,9 @@ import ReloadPage from '@/components/ReloadPage'
 import { decodeUrlParam } from '@/utils/urlTool'
 import { getStorage } from '@/utils/wechat'
 import each from 'lodash/each'
+import series from 'async-es/series'
+import fetch from '@/service/fetch'
+import { knowledgeLibUrl } from '@/config/interfaceTool'
 export default {
     data() {
         return {
@@ -65,7 +82,19 @@ export default {
             firstLoadStatus: false,
             routerParams: {},
             reportData: {}, // 报告数据
-            paramsStr: ''
+            paramsStr: '',
+            codeObj: {
+                masterCodeContent: '',
+                bothCodeContent: '',
+                inclineCodeContent: ''
+            },
+            code: {
+                master: {},
+                both: [],
+                incline: []
+            },
+            mulRaiseData: '', // 五养数据
+            computeSize: 3
         }
     },
     components: {
@@ -81,19 +110,104 @@ export default {
             wx.showLoading({
                 title: '正在加载中...'
             })
-            getStorage(`REPORT_${this.routerParams.code}`).then(res => {
+            series([
+                // 1.评估报告
+                (done) => {
+                    // 从本地缓存取数据
+                    getStorage(`REPORT_${this.routerParams.code}`).then(res => {
+                        // console.log('res', res)
+                        if (res && res.data) {
+                            this.setMasterCode(res.data)
+                            done(null, {
+                                res: res.data,
+                                isError: false
+                            })
+                        } else {
+                            done(null, {
+                                isError: true,
+                                msg: '获取报告数据失败,本地没数据'
+                            })
+                        }
+                    }).catch(err => {
+                        console.log(err)
+                        done(null, {
+                            isError: true,
+                            msg: '获取本地数据异常'
+                        })
+                        // this.showLoadMsg('获取问卷失败')
+                    })
+                },
+                // 五养
+                (done) => {
+                    if (!this.routerParams.reportCode) {
+                        done(null, {
+                            isError: false
+                        })
+                        return
+                    }
+                    const parameterData = { 'type': '1', 'diseaseCode': this.routerParams.reportCode }
+                    fetch({
+                        baseUrl: knowledgeLibUrl,
+                        api: '/health/category',
+                        method: 'POST',
+                        contentType: 'application/x-www-form-urlencoded',
+                        params: { data: JSON.stringify(parameterData) }
+                    }).then(respose => {
+                        let res = respose.data
+                        console.log('五养 res', res)
+                        if (res && res.data && (res.success === true || res.success === 'true')) {
+                            done(null, {
+                                res: res.data,
+                                isError: false
+                            })
+                        } else {
+                            let failedMsg = res.message ? res.message : '获取数据失败'
+                            done(null, {
+                                isError: true,
+                                msg: failedMsg
+                            })
+                        }
+                    }).catch((ex) => {
+                        console.log('五养 error', ex)
+                        done(null, {
+                            isError: true,
+                            msg: '获取五养失败，服务器异常'
+                        })
+                    })
+                }
+            ], (err, results) => {
+                if (err) {
+                    console.log('err', err)
+                }
                 wx.hideLoading()
                 this.firstLoadStatus = false
-                console.log('res', res);
-                if (res && res.data) {
-                    this.doReport(res.data)
-                } else {
-                    this.showLoadMsg('获取问卷失败')
-                }
-            }).catch(err => {
-                console.log(err)
-                this.showLoadMsg('获取问卷失败')
+                this.doResults(results)
             })
+        },
+        doResults(results) {
+            console.log('doResults', results);
+            const reportResult = results[0]
+            const mulRaiseResult = results[1]
+            let failedMsg = ''
+            // 1.处理报告数据
+            if (!reportResult.isError) {
+                if (reportResult.res) {
+                    this.doReport(reportResult.res)
+                }
+            } else {
+                failedMsg = reportResult.msg
+                // this.loadError = true
+            }
+            // 2.处理五养数据
+            if (mulRaiseResult) {
+                // console.log('mulRaiseResult', mulRaiseResult);
+                if (!mulRaiseResult.isError) {
+                    this.doMulRaise(mulRaiseResult.res)
+                } else {
+                    failedMsg = mulRaiseResult.msg
+                }
+            }
+            console.log(failedMsg)
         },
         kScoreJump(kScore) {
             console.log('kScoreJump', kScore)
@@ -113,6 +227,108 @@ export default {
         },
         codeDesJump() {
 
+        },
+        setMasterCode(data) {
+            // console.log('setMasterCode', data)
+            if (data && data.result) {
+                let result = data.result
+                if (!this.routerParams.reportCode && result.master && result.master.code) {
+                    // 问卷masterCode
+                    this.routerParams.reportCode = result.master.code
+                    console.log('setMasterCode-----reportCode', this.routerParams.reportCode);
+                }
+                if (result.master) {
+                    // console.log('master', result.master);
+                    // 主体质
+                    this.codeObj.masterCodeContent = result.master.name
+                    this.code.master = result.master
+                }
+                if (result.both && result.both.length > 0) {
+                    // 兼有体质列表
+                    let bothCodeArr = []
+                    each(result.both, (bothItem) => {
+                        if (bothItem.name) {
+                            bothCodeArr.push(bothItem.name)
+                        }
+                    })
+                    this.codeObj.bothCodeContent = bothCodeArr.join('、')
+                    this.code.both = result.both
+                }
+                if (result.incline && result.incline.length > 0) {
+                    // 倾向体质列表
+                    let inclineCodeArr = []
+                    each(result.incline, (inclineItem) => {
+                        if (inclineItem.name) {
+                            inclineCodeArr.push(inclineItem.name)
+                        }
+                    })
+                    this.codeObj.inclineCodeContent = inclineCodeArr.join('、')
+                    this.code.incline = result.incline
+                }
+            }
+            if (data && data.questionnaire) {
+                let questionnaire = data.questionnaire
+                if (!this.routerParams.code && questionnaire && questionnaire.code) {
+                    this.routerParams.code = questionnaire.code
+                }
+            }
+        },
+        doMulRaise(mulRaiseOriginData) {
+            console.log('doMulRaise data', mulRaiseOriginData)
+            let raiseData = {}
+            raiseData.list = []
+            if (mulRaiseOriginData) {
+                each(mulRaiseOriginData, (raiseItemValue, raiseItemkey) => {
+                    if (raiseItemValue.name === '食养') {
+                        raiseData.list.push({
+                            name: 'dietary',
+                            title: raiseItemValue.name ? raiseItemValue.name : '',
+                            nextPageId: '0',
+                            img: raiseItemValue.imgUrl ? raiseItemValue.imgUrl : '',
+                            desc: '',
+                            apiUrl: raiseItemValue.apiUrl
+                        })
+                    } else if (raiseItemValue.name === '居养') {
+                        raiseData.list.push({
+                            name: 'house',
+                            title: raiseItemValue.name ? raiseItemValue.name : '',
+                            nextPageId: '0',
+                            img: raiseItemValue.imgUrl ? raiseItemValue.imgUrl : '',
+                            desc: ''
+                        })
+                    } else if (raiseItemValue.name === '术养') {
+                        raiseData.list.push({
+                            name: 'kungfu',
+                            title: raiseItemValue.name ? raiseItemValue.name : '',
+                            nextPageId: '0',
+                            img: raiseItemValue.imgUrl ? raiseItemValue.imgUrl : '',
+                            desc: ''
+                        })
+                    } else if (raiseItemValue.name === '心养') {
+                        raiseData.list.push({
+                            name: 'heart',
+                            title: raiseItemValue.name ? raiseItemValue.name : '',
+                            nextPageId: '0',
+                            img: raiseItemValue.imgUrl ? raiseItemValue.imgUrl : '',
+                            desc: ''
+                        })
+                    } else if (raiseItemValue.name === '动养') {
+                        raiseData.list.push({
+                            name: 'action',
+                            title: raiseItemValue.name ? raiseItemValue.name : '',
+                            nextPageId: '0',
+                            img: raiseItemValue.imgUrl ? raiseItemValue.imgUrl : '',
+                            desc: ''
+                        })
+                    }
+                    // console.log('mulRaiseOriginData each', raiseItemkey, raiseItemValue)
+                })
+                this.mulRaiseData = raiseData
+                console.log('mulRaiseOriginData-知识库-后', this.mulRaiseData)
+            }
+        },
+        raiseJump(raiseItem) {
+            console.log('raiseJump', raiseItem)
         },
         doReport(data) {
             console.log('doReport data', data)
@@ -160,7 +376,7 @@ export default {
                 }
                 this.reportData.list = list
             }
-            console.log('this.reportData', this.reportData)
+            // console.log('this.reportData', this.reportData)
         }
     },
     updated() {
@@ -220,15 +436,10 @@ $lineColor: rgb(228,228,228);
                     // font-weight: 460;
                 }
             }
-            .healthConsultation {
-                display: flex;
-                justify-content: space-between;
-            }
             .p-content {
                 padding: 20px;
                 p {
                     line-height: 25px;
-
                     .bothCode,
                     .inclineCode,
                     .masterCode {
@@ -245,43 +456,23 @@ $lineColor: rgb(228,228,228);
                 }
                 .raise {
                     margin: 0 -10px;
-                }
-                .des {
-                    display: flex;
-                    align-items: center;
-                    img {
-                        width: 100px;
-                        height: auto;
-                    }
-                }
-                .des-left {
-                    img {
-                        margin-right: 10px;
-                    }
-                }
-                .des-right {
-                    justify-content: space-between;
-                    flex-direction: row-reverse;
-                    img {
-                        margin-left: 10px;
-                    }
-                }
-
-                .advice {
-                    box-sizing: border-box;
-                    padding: 0 2px;
-                    margin-bottom: 15px;
-                    img {
-                        width: 100%;
-                    }
-                    h3 {
-                        font-size: 16px;
-                        font-weight: normal;
-                        line-height: 30px;
-                        text-align: center;
-                        position: relative;
-                        font-size: 14px;
-                        top: -4px;
+                    .advice {
+                        box-sizing: border-box;
+                        flex: 1 1 33.33%;
+                        padding: 0 2px;
+                        margin-bottom: 15px;
+                        img {
+                            width: 100%;
+                        }
+                        h3 {
+                            font-size: 16px;
+                            font-weight: normal;
+                            line-height: 30px;
+                            text-align: center;
+                            position: relative;
+                            font-size: 14px;
+                            top: -4px;
+                        }
                     }
                 }
 
@@ -289,18 +480,6 @@ $lineColor: rgb(228,228,228);
                     border-bottom: 1px solid #e4e4e4;
                     margin: 10px -18px;
                 }
-                .healthb {
-                    border: 1px solid #EAEAEA;
-                    padding: 2px;
-                }
-            }
-        }
-        .panel:last-child {
-            border-bottom: 1px solid $lineColor;
-        }
-        .panel:first-child {
-            .p-title {
-                border-top: 1px solid $lineColor;
             }
         }
 
