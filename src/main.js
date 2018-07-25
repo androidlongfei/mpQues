@@ -1,8 +1,12 @@
 import Vue from 'vue'
 import App from './App'
+import globalFun from './config/globalFun'
 
 Vue.config.productionTip = false
 App.mpType = 'app'
+
+// 全局方法
+Vue.use(globalFun)
 
 const app = new Vue(App)
 app.$mount()

@@ -22,7 +22,6 @@
                     <single-topic v-for="(questionItem,index) in surveyQuestionList" :key="index" :questionItem="questionItem"></single-topic>
                 </div>
                 <div class="question" v-else>
-                    {{this.paging.curPage}}
                     <single-topic v-for="(questionItem,index) in surveyQuestionList" :key="index+100" :questionItem="questionItem"></single-topic>
                 </div>
             </div>
@@ -296,11 +295,7 @@ export default {
                         this.loadError = true
                     }
                     let failedMsg = res.message ? res.message : '获取数据失败'
-                    wx.showToast({
-                        title: failedMsg,
-                        icon: 'fail',
-                        duration: 2000
-                    })
+                    this.showLoadMsg(failedMsg)
                 }
             }).catch((ex) => {
                 wx.hideLoading()
@@ -310,11 +305,7 @@ export default {
                     this.loadError = true
                 }
                 console.log('getSurveyQuesByJson error', ex)
-                wx.showToast({
-                    title: '获取问卷失败,服务器异常',
-                    icon: 'fail',
-                    duration: 2000
-                })
+                this.showLoadMsg('获取问卷失败,服务器异常')
             })
         },
         doPaging(isScroll) {
@@ -332,13 +323,6 @@ export default {
             if (isScroll) {
                 // this.scrollYPosition(200)
             }
-        },
-        showLoadMsg(msg) {
-            wx.showToast({
-                title: msg,
-                icon: 'fail',
-                duration: 2000
-            })
         },
         doResut(data) {
             // 处理分页数据

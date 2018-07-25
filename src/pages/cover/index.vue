@@ -54,11 +54,7 @@ export default {
         agin() {
             console.log('开始评估');
             if (!this.routerParams.code) {
-                wx.showToast({
-                    title: '问卷code不存在',
-                    icon: 'fail',
-                    duration: 2000
-                })
+                this.showLoadMsg('问卷code不存在')
                 return
             }
             let queryParam = {
@@ -100,22 +96,14 @@ export default {
                     this.doResult(contentData.data)
                 } else {
                     let failedMsg = contentData.message ? contentData.message : '获取数据失败,服务器异常'
-                    wx.showToast({
-                        title: failedMsg,
-                        icon: 'fail',
-                        duration: 2000
-                    })
+                    this.showLoadMsg(failedMsg)
                 }
             }).catch(err => {
                 console.log('err', err)
                 this.firstLoadStatus = false
                 this.loadError = true
                 wx.hideLoading()
-                wx.showToast({
-                    title: '获取数据失败,服务器异常',
-                    icon: 'fail',
-                    duration: 2000
-                })
+                this.showLoadMsg('获取数据失败,服务器异常')
             })
         },
         doResult(data) {
@@ -126,9 +114,7 @@ export default {
                 }
                 if (data.questionnaire && data.questionnaire.title) {
                     // 设置title
-                    wx.setNavigationBarTitle({
-                        title: data.questionnaire.title
-                    })
+                    this.setTitle(data.questionnaire.title)
                 }
                 if (data.questionnaire.params && data.questionnaire.params.length > 0) {
                     this.paramsStr = data.questionnaire.params.join(',')

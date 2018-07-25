@@ -192,3 +192,61 @@ mounted() {
     console.log('this.routerParams', this.routerParams);
 }
 ```
+
+## 不支持{{method(param)}}语法
+
+如下:
+
+```html
+<template>
+    <div class="contain">
+      {{getTitle()}}
+    </div>
+</template>
+```
+
+```javascript
+export default {
+  data(){
+    return{
+      report:{
+        title:'睡眠报告'
+      }
+    }
+  },
+  method:{
+    getTitle(){
+      return this.report.title + new Date()
+    }
+  }
+}
+```
+
+> 以上代码在微信小程序上无法显示
+
+解决方法，使用计算属性代替，如下:
+
+```html
+<template>
+    <div class="contain">
+      {{getTitle}}
+    </div>
+</template>
+```
+
+```javascript
+export default {
+  data(){
+    return{
+      report:{
+        title:'睡眠报告'
+      }
+    }
+  },
+  computed:{
+    getTitle(){
+      return this.report.title + new Date()
+    }
+  }
+}
+```

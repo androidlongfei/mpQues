@@ -95,13 +95,6 @@ export default {
                 this.showLoadMsg('获取问卷失败')
             })
         },
-        showLoadMsg(msg) {
-            wx.showToast({
-                title: msg,
-                icon: 'fail',
-                duration: 2000
-            })
-        },
         kScoreJump(kScore) {
             console.log('kScoreJump', kScore)
         },
@@ -118,26 +111,6 @@ export default {
             ctx.restore()
             ctx.draw()
         },
-        getReportItemContentImg(reportItem) {
-            if (reportItem.img) {
-                return reportItem.img
-            }
-            return ''
-            // return 'http://fs-prod.ipaas.enncloud.cn/laikang-sydn-img-care/e56e980b-f928-41e1-b2b9-69b92a7ed782.jpg?e=9999999999&token=2:HQJMCQOQEXFIBKKOEAWI:ef38a2a3ac7879de0daaa444f92dcae5525ed0e87913730908ca50320e9d098e'
-        },
-        getReportItemTitle(reportItem) {
-            console.log('getReportItemTitle', reportItem)
-            if (reportItem.title) {
-                return reportItem.title
-            }
-            return ''
-        },
-        getReportItemContentWord(reportItem) {
-            if (reportItem.value) {
-                return reportItem.value
-            }
-            return '无'
-        },
         codeDesJump() {
 
         },
@@ -145,9 +118,13 @@ export default {
             console.log('doReport data', data)
             if (data.questionnaire) {
                 let questionnaire = data.questionnaire
+                // console.log('questionnaire', questionnaire)
                 if (questionnaire.title) {
                     // 问卷title
-                    this.reportData.title = data.title
+                    this.reportData.title = questionnaire.title
+                    wx.setNavigationBarTitle({
+                        title: questionnaire.title
+                    })
                 }
             }
 
@@ -161,7 +138,7 @@ export default {
             if (data.kScore || data.kScore === 0) {
                 // 画布画评估分数
                 this.reportData.kScore = data.kScore
-                console.log('data.kScore.................', data.kScore);
+                // console.log('data.kScore.................', data.kScore);
             }
             if (this.routerParams.kScore) {
                 // 画布画评估分数 问卷传输过来的分数，会把分数覆盖掉
@@ -231,7 +208,7 @@ $lineColor: rgb(228,228,228);
         }
 
         .panel {
-            border: 1px solid $lineColor;
+            // border: 1px solid $lineColor;
             border-bottom: 0;
             .p-title {
                 padding: 0 20px;
